@@ -1,3 +1,5 @@
+import os
+
 from flask import (
     Flask,
     render_template,
@@ -6,11 +8,6 @@ from flask import (
     redirect,
     url_for,
     session
-)
-
-from werkzeug.security import (
-    generate_password_hash,
-    check_password_hash
 )
 
 from functools import wraps
@@ -23,6 +20,16 @@ from config import (
 
 from common.chatbot import Chatbot
 
+from database import (
+    init_database,
+    create_user,
+    get_user_by_email,
+    verify_user,
+    save_message,
+    get_messages,
+    clear_user_messages
+)
+
 
 # ==========================================
 # FLASK APP
@@ -31,42 +38,35 @@ from common.chatbot import Chatbot
 app = Flask(__name__)
 
 # IMPORTANT:
-# Production-ல் இதை random secret key-ஆ மாற்றவும்.
-app.secret_key = "convora-change-this-secret-key"
+# Render Environment Variables-la SECRET_KEY add pannunga.
+app.secret_key = os.getenv(
+    "SECRET_KEY",
+    "dev-only-change-this-secret-key"
+)
 
 
 # ==========================================
-# USER DATABASE
+# DATABASE INITIALIZATION
 # ==========================================
 
-# Temporary in-memory users.
-#
-# IMPORTANT:
-# Server restart செய்தால் users disappear ஆகிவிடுவார்கள்.
-# Later SQLite database-க்கு மாற்றலாம்.
-
-users = {}
+init_database()
 
 
 # ==========================================
 # USER CHATBOTS
 # ==========================================
 
-# ஒவ்வொரு logged-in user-க்கும்
-# தனி Chatbot object.
+# Current running server instance-la
+# each user-ku separate Chatbot object.
 #
-# Example:
-#
-# user1 -> Chatbot()
-# user2 -> Chatbot()
-#
-# User 1 conversation User 2-க்கு தெரியாது.
+# Database-la actual conversation messages
+# save aagum.
 
 user_chatbots = {}
 
 
 # ==========================================
-# LOGIN REQUIRED DECORATOR
+# LOGIN REQUIRED
 # ==========================================
 
 def login_required(function):
@@ -76,7 +76,6 @@ def login_required(function):
 
         if "user_id" not in session:
 
-            # API request என்றால் JSON response
             if request.path in ["/chat", "/reset"]:
 
                 return jsonify({
@@ -118,13 +117,11 @@ def home():
 )
 def register():
 
-    # Already logged in
     if "user_id" in session:
 
         return redirect(
             url_for("home")
         )
-
 
     # GET
     if request.method == "GET":
@@ -132,7 +129,6 @@ def register():
         return render_template(
             "register.html"
         )
-
 
     # POST
 
@@ -169,6 +165,14 @@ def register():
         )
 
 
+    if len(username) < 3:
+
+        return render_template(
+            "register.html",
+            error="Username must contain at least 3 characters."
+        )
+
+
     if not email:
 
         return render_template(
@@ -202,43 +206,56 @@ def register():
 
 
     # ======================================
-    # CHECK EXISTING EMAIL
+    # CHECK EXISTING USER
     # ======================================
 
-    for user in users.values():
+    existing_user = get_user_by_email(
+        email
+    )
 
-        if user["email"] == email:
+    if existing_user:
 
-            return render_template(
-                "register.html",
-                error="An account with this email already exists."
-            )
+        return render_template(
+            "register.html",
+            error="An account with this email already exists."
+        )
 
 
     # ======================================
     # CREATE USER
     # ======================================
 
-    user_id = str(
-        len(users) + 1
-    )
-
-
-    password_hash = generate_password_hash(
+    created = create_user(
+        username,
+        email,
         password
     )
 
+    if not created:
 
-    users[user_id] = {
+        return render_template(
+            "register.html",
+            error="Username or email already exists."
+        )
 
-        "id": user_id,
 
-        "username": username,
+    # ======================================
+    # GET CREATED USER
+    # ======================================
 
-        "email": email,
+    user = get_user_by_email(
+        email
+    )
 
-        "password": password_hash
-    }
+    if not user:
+
+        return render_template(
+            "register.html",
+            error="Unable to create your account. Please try again."
+        )
+
+
+    user_id = user["id"]
 
 
     # ======================================
@@ -256,14 +273,17 @@ def register():
 
     session["user_id"] = user_id
 
-    session["username"] = username
+    session["username"] = user["username"]
+
+    session.permanent = True
 
 
     print()
     print("================================")
     print("NEW USER REGISTERED")
-    print("USERNAME:", username)
-    print("EMAIL:", email)
+    print("USERNAME:", user["username"])
+    print("EMAIL:", user["email"])
+    print("USER ID:", user_id)
     print("================================")
     print()
 
@@ -283,7 +303,6 @@ def register():
 )
 def login():
 
-    # Already logged in
     if "user_id" in session:
 
         return redirect(
@@ -292,6 +311,7 @@ def login():
 
 
     # GET
+
     if request.method == "GET":
 
         return render_template(
@@ -312,23 +332,22 @@ def login():
     )
 
 
+    if not email or not password:
+
+        return render_template(
+            "login.html",
+            error="Please enter your email and password."
+        )
+
+
     # ======================================
-    # FIND USER
+    # VERIFY USER
     # ======================================
 
-    user_id = None
-    user = None
-
-
-    for current_id, current_user in users.items():
-
-        if current_user["email"] == email:
-
-            user_id = current_id
-
-            user = current_user
-
-            break
+    user = verify_user(
+        email,
+        password
+    )
 
 
     if user is None:
@@ -339,23 +358,11 @@ def login():
         )
 
 
-    # ======================================
-    # CHECK PASSWORD
-    # ======================================
-
-    if not check_password_hash(
-        user["password"],
-        password
-    ):
-
-        return render_template(
-            "login.html",
-            error="Invalid email or password."
-        )
+    user_id = user["id"]
 
 
     # ======================================
-    # CREATE CHATBOT IF NEEDED
+    # CREATE CHATBOT
     # ======================================
 
     if user_id not in user_chatbots:
@@ -373,11 +380,14 @@ def login():
 
     session["username"] = user["username"]
 
+    session.permanent = True
+
 
     print()
     print("================================")
     print("USER LOGIN")
     print("USERNAME:", user["username"])
+    print("USER ID:", user_id)
     print("================================")
     print()
 
@@ -399,7 +409,6 @@ def logout():
         "username",
         "Unknown"
     )
-
 
     session.clear()
 
@@ -431,14 +440,14 @@ def chat():
     try:
 
         # ==================================
-        # GET CURRENT USER
+        # CURRENT USER
         # ==================================
 
         user_id = session["user_id"]
 
 
         # ==================================
-        # GET REQUEST DATA
+        # REQUEST DATA
         # ==================================
 
         data = request.get_json(
@@ -476,6 +485,17 @@ def chat():
 
 
         # ==================================
+        # SAVE USER MESSAGE
+        # ==================================
+
+        save_message(
+            user_id,
+            "user",
+            user_message
+        )
+
+
+        # ==================================
         # LOG
         # ==================================
 
@@ -496,11 +516,22 @@ def chat():
 
 
         # ==================================
-        # GET AI RESPONSE
+        # AI RESPONSE
         # ==================================
 
         response = chatbot.get_response(
             user_message
+        )
+
+
+        # ==================================
+        # SAVE AI RESPONSE
+        # ==================================
+
+        save_message(
+            user_id,
+            "assistant",
+            response
         )
 
 
@@ -559,6 +590,43 @@ def chat():
 
 
 # ==========================================
+# CHAT HISTORY
+# ==========================================
+
+@app.route(
+    "/history",
+    methods=["GET"]
+)
+@login_required
+def history():
+
+    try:
+
+        user_id = session["user_id"]
+
+        messages = get_messages(
+            user_id,
+            limit=20
+        )
+
+        return jsonify({
+            "messages": messages
+        }), 200
+
+
+    except Exception as error:
+
+        print(
+            "HISTORY ERROR:",
+            str(error)
+        )
+
+        return jsonify({
+            "error": "Unable to load chat history."
+        }), 500
+
+
+# ==========================================
 # RESET CHAT
 # ==========================================
 
@@ -575,7 +643,16 @@ def reset_chat():
 
 
         # ==================================
-        # RESET ONLY CURRENT USER
+        # DELETE DATABASE HISTORY
+        # ==================================
+
+        clear_user_messages(
+            user_id
+        )
+
+
+        # ==================================
+        # CREATE NEW CHATBOT
         # ==================================
 
         user_chatbots[user_id] = Chatbot()
@@ -606,49 +683,36 @@ def reset_chat():
 
 
 # ==========================================
-# RUN SERVER
+# HEALTH CHECK
+# ==========================================
+
+@app.route("/health")
+def health():
+
+    return jsonify({
+        "status": "ok",
+        "app": BOT_NAME
+    }), 200
+
+
+# ==========================================
+# LOCAL DEVELOPMENT
 # ==========================================
 
 if __name__ == "__main__":
 
     print()
-
-    print(
-        "========================================"
-    )
-
-    print(
-        "       🎙️ CONVORA"
-    )
-
-    print(
-        "       Find Your Voice."
-    )
-
-    print(
-        "========================================"
-    )
-
-    print(
-        "Running locally..."
-    )
-
-    print(
-        "http://127.0.0.1:5000"
-    )
-
-    print(
-        "========================================"
-    )
-
+    print("========================================")
+    print("       🎙️ CONVORA")
+    print("       Find Your Voice.")
+    print("========================================")
+    print("Running locally...")
+    print("http://127.0.0.1:5000")
+    print("========================================")
     print()
 
-
     app.run(
-
         host="127.0.0.1",
-
         port=5000,
-
         debug=True
     )
