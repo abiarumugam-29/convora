@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CONVORA — Login</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        :root {
+
+            --cream: #FAF6F1;
+
+            --white: #FFFFFF;
+
+            --purple: #8E7AB5;
+
+            --purple-light: #F0EBF7;
+
+            --peach: #FBE4D5;
+
+            --coral: #D9786B;
+
+            --coral-dark: #C9675B;
+
+            --text: #302B32;
+
+            --text-soft: #716A70;
+
+            --text-muted: #A29A9F;
+
+            --border: #EDE5DF;
+
+        }
+
+
+        body {
+
+            min-height: 100vh;
+
+            background: var(--cream);
+
+            color: var(--text);
+
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 20px;
+
+        }
+
+
+        .page {
+
+            width: 100%;
+
+            max-width: 430px;
+
+        }
+
+
+        /* ==========================================
+           BRAND
+        ========================================== */
+
+        .brand {
+
+            text-align: center;
+
+            margin-bottom: 28px;
+
+        }
+
+
+        .brand-mark {
+
+            width: 52px;
+
+            height: 52px;
+
+            margin: 0 auto 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 15px;
+
+            background: var(--purple);
+
+            color: white;
+
+            font-size: 20px;
+
+            font-weight: 750;
+
+            box-shadow:
+                0 8px 22px rgba(142, 122, 181, 0.22);
+
+        }
+
+
+        .brand h1 {
+
+            font-size: 22px;
+
+            letter-spacing: 1px;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .brand p {
+
+            color: var(--text-muted);
+
+            font-size: 12px;
+
+        }
+
+
+        /* ==========================================
+           CARD
+        ========================================== */
+
+        .card {
+
+            background: var(--white);
+
+            border: 1px solid var(--border);
+
+            border-radius: 22px;
+
+            padding: 32px;
+
+            box-shadow:
+                0 15px 45px rgba(72, 55, 58, 0.08);
+
+        }
+
+
+        .card h2 {
+
+            text-align: center;
+
+            font-size: 24px;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .subtitle {
+
+            text-align: center;
+
+            color: var(--text-soft);
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        /* ==========================================
+           ERROR
+        ========================================== */
+
+        .error {
+
+            background: #FBE8E5;
+
+            color: var(--coral-dark);
+
+            border: 1px solid #F1CCC7;
+
+            border-radius: 10px;
+
+            padding: 11px 13px;
+
+            margin-bottom: 18px;
+
+            font-size: 12px;
+
+            line-height: 1.5;
+
+        }
+
+
+        /* ==========================================
+           FORM
+        ========================================== */
+
+        .form-group {
+
+            margin-bottom: 17px;
+
+        }
+
+
+        label {
+
+            display: block;
+
+            margin-bottom: 7px;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            color: var(--text);
+
+        }
+
+
+        input {
+
+            width: 100%;
+
+            height: 46px;
+
+            padding: 0 13px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 11px;
+
+            outline: none;
+
+            background: #FFFCF9;
+
+            color: var(--text);
+
+            font-family: inherit;
+
+            font-size: 13px;
+
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+
+        }
+
+
+        input:focus {
+
+            border-color: #D5C8E4;
+
+            box-shadow:
+                0 0 0 3px rgba(142, 122, 181, 0.08);
+
+        }
+
+
+        input::placeholder {
+
+            color: var(--text-muted);
+
+        }
+
+
+        /* ==========================================
+           BUTTON
+        ========================================== */
+
+        .submit-button {
+
+            width: 100%;
+
+            height: 46px;
+
+            border: none;
+
+            border-radius: 11px;
+
+            background: var(--coral);
+
+            color: white;
+
+            font-family: inherit;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            margin-top: 5px;
+
+            transition:
+                background 0.2s ease,
+                transform 0.2s ease;
+
+        }
+
+
+        .submit-button:hover {
+
+            background: var(--coral-dark);
+
+            transform: translateY(-1px);
+
+        }
+
+
+        /* ==========================================
+           FOOTER
+        ========================================== */
+
+        .switch-page {
+
+            text-align: center;
+
+            margin-top: 22px;
+
+            color: var(--text-soft);
+
+            font-size: 12px;
+
+        }
+
+
+        .switch-page a {
+
+            color: var(--purple);
+
+            text-decoration: none;
+
+            font-weight: 700;
+
+        }
+
+
+        .switch-page a:hover {
+
+            text-decoration: underline;
+
+        }
+
+
+        .privacy {
+
+            text-align: center;
+
+            color: var(--text-muted);
+
+            font-size: 10px;
+
+            line-height: 1.5;
+
+            margin-top: 20px;
+
+        }
+
+
+        /* ==========================================
+           MOBILE
+        ========================================== */
+
+        @media (max-width: 480px) {
+
+            body {
+
+                padding: 15px;
+
+            }
+
+
+            .card {
+
+                padding: 25px 20px;
+
+            }
+
+
+            .brand {
+
+                margin-bottom: 22px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="page">
+
+
+        <!-- ======================================
+             BRAND
+        ======================================= -->
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                C
+            </div>
+
+            <h1>
+                CONVORA
+            </h1>
+
+            <p>
+                Find Your Voice.
+            </p>
+
+        </div>
+
+
+        <!-- ======================================
+             LOGIN CARD
+        ======================================= -->
+
+        <div class="card">
+
+            <h2>
+                Welcome Back
+            </h2>
+
+            <p class="subtitle">
+                Login to continue your English learning journey.
+            </p>
+
+
+            <!-- Error Message -->
+
+            {% if error %}
+
+            <div class="error">
+                {{ error }}
+            </div>
+
+            {% endif %}
+
+
+            <!-- Login Form -->
+
+            <form
+                method="POST"
+                action="{{ url_for('login') }}"
+            >
+
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter your email"
+                        autocomplete="email"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="submit-button"
+                >
+                    Login
+                </button>
+
+            </form>
+
+
+            <div class="switch-page">
+
+                Don't have an account?
+
+                <a href="{{ url_for('register') }}">
+                    Create account
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <p class="privacy">
+            Your CONVORA conversations are private to your account.
+        </p>
+
+
+    </div>
+
+</body>
+
+</html>
